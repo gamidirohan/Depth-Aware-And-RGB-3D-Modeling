@@ -1,6 +1,33 @@
-# 3D Object Reconstruction with Multi-View RGB-D Images
+# Depth-Aware-And-RGB-3D-Modeling
+
 
 With RGB-D cameras, we can get multiple RGB and Depth images and convert them to point clouds easily. Leveraging this, we can reconstruct single object with multi-view RGB and Depth images. To acheive this, point clouds from multi-view need to be registered. This task is also known as **point registration"**, whose goal is to find transfomration matrix between source and target point clouds. The alignment consists of two sub-alignment, Initial alignment and Alignment refinement. 
+
+## Dataset Formatting
+
+This project uses the [RGB-D dataset](http://www.cs.washington.edu/rgbd-dataset) from the University of Washington. Once downloaded, the dataset is formatted using the provided `format_repo.py` script to organize the files into the required structure.
+
+### How to Use
+
+1. **Download the dataset:**
+   Download the RGB-D dataset from [here](http://www.cs.washington.edu/rgbd-dataset).
+
+2. **Format the dataset:**
+   Use the `format_repo.py` script to format the dataset as required for this repository. Update the `source_directory` and `target_directory` variables in the script to point to your dataset location.
+
+   ```python
+   if __name__ == "__main__":
+       source_directory = r"train\apple_1"  # Update this path
+       target_directory = source_directory  # Update this path
+       reorganize_dataset(source_directory, target_directory)
+   ```
+
+3. **Run the script:**
+   Execute the script to format the dataset.
+
+   ```bash
+   python format_repo.py
+   ```
 
 ## RGB-D Camera Spec
 - Model: Intel realsense D415
@@ -62,10 +89,56 @@ The reconstructed point clouds is below. <br>
 <img src="https://user-images.githubusercontent.com/50229148/207057731-dd2b725b-4f1b-498a-8264-c0a37118fb1b.gif" width="400" height="240"><img src="https://user-images.githubusercontent.com/50229148/207055985-3f8fd7f2-305d-4b92-bff0-7f62675179ea.gif" width="400" height="240">
 
 #### Object 3D Reconstruction (ICP based)
-<img src="https://user-images.githubusercontent.com/50229148/207057841-18e17230-c2f8-4d73-834f-309f4a788ba8.gif" width="400" height="240"><img src="https://user-images.githubusercontent.com/50229148/207056463-6033a29a-d25f-4100-8a3d-c5c1883d9eb4.gif" width="400" height="240">
+<img src="https://user-images.githubusercontent.com/50229148/207057841-18e17230-c2f8-4d73-834f-309f4a788ba8.gif" width="400" height="240"><img src="https://user-images.githubusercontent.com/50229148/207056463-6033a29a-d25f-4100-8e3d-c5c1883d9eb4.gif" width="400" height="240">
 
 
 #### Human shape 3D Reconstruction 
 <img src="https://user-images.githubusercontent.com/50229148/207057339-28d455ff-27b5-4209-9afe-6133ea94e4b2.gif" width="400" height="240"><img src="https://user-images.githubusercontent.com/50229148/207056403-2bf1fd3e-0f4b-418f-a3e1-9286207f2d34.gif" width="400" height="240">
 
+## Pushing to GitHub
 
+To push your changes to a new or existing branch on GitHub, follow these steps:
+
+1. **Initialize Git (if not already initialized):**
+
+   ```bash
+   git init
+   ```
+
+2. **Add the remote repository:**
+
+   ```bash
+   git remote add origin https://github.com/gamidirohan/Depth-Aware-And-RGB-3D-Modeling.git
+   ```
+
+   If the remote already exists, update it:
+
+   ```bash
+   git remote set-url origin https://github.com/gamidirohan/Depth-Aware-And-RGB-3D-Modeling.git
+   ```
+
+3. **Add all files to the staging area:**
+
+   ```bash
+   git add .
+   ```
+
+4. **Commit the changes with a message:**
+
+   ```bash
+   git commit -m "Initial commit"
+   ```
+
+5. **Push the changes to the remote repository:**
+
+   ```bash
+   git push -u origin main
+   ```
+
+   If you are pushing to a different branch, replace `main` with your branch name:
+
+   ```bash
+   git push -u origin your-branch-name
+   ```
+
+Feel free to ask if you have any questions or need further assistance!
