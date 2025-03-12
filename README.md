@@ -14,6 +14,7 @@ This project uses the [RGB-D dataset](http://www.cs.washington.edu/rgbd-dataset)
 
 2. **Format the dataset:**
    Use the `format_repo.py` script to format the dataset as required for this repository. Update the `source_directory` and `target_directory` variables in the script to point to your dataset location.
+   Easier to do with each object placed in the train directory, updating the directory variables in the code, and run.
 
    ```python
    if __name__ == "__main__":
