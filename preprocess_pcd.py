@@ -7,6 +7,14 @@ def rgbd_to_pcd(count):
 
     source_color = o3d.io.read_image('./train/spyderman2/rgb/align_test%d.png'%count)
     source_depth = o3d.io.read_image('./train/spyderman2/depth/align_test_depth%d.png'%count)
+    source_mask = o3d.io.read_image('./train/spyderman2/mask/align_test_mask%d.png' % count)
+    color_np = np.asarray(source_color)
+    depth_np = np.asarray(source_depth)
+    mask_np = np.asarray(source_mask)
+    color_np[mask_np == 0] = 0
+    depth_np[mask_np == 0] = 0
+    source_color = o3d.geometry.Image(color_np)
+    source_depth = o3d.geometry.Image(depth_np)
 
     K = np.array(
          [[597.522, 0.0, 312.885],
