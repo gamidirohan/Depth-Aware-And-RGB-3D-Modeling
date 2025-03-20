@@ -1,0 +1,30 @@
+# Byte-compiled files
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+env/
+myenv/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Python-specific
+*.egg-info/
+*.eggs/
+*.sqlite3
+
+# IDE-specific files
+.vscode/
+.idea/
+*.iml
+
+# Output files
+*.png
+*.txt

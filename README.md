@@ -39,11 +39,35 @@ K = [[597.522, 0.0, 312.885],
      [0.0, 0.0, 1.0]]
 ```
 ## Requirements
-- Open3D
-- Pyrealsense2
-- OpenCV
-- Numpy
-- Kornia
+
+# myenv Virtual Environment File
+
+Below is a sample requirements file for setting up your virtual environment with the necessary dependencies:
+
+Create the virtual environment:
+  
+  python -m venv myenv
+  # Activate the environment:
+  # On Windows:
+  ./myenv/Scripts/activate
+  # On Unix or MacOS:
+  source myenv/bin/activate
+
+Then, create a file named requirements.txt with the following content:
+
+pyrealsense2 only works with python 3.9
+
+--------------------------------------------------
+open3d
+pyrealsense2
+opencv-python
+numpy
+kornia
+--------------------------------------------------
+
+Finally, install the dependencies using:
+
+  pip install -r requirements.txt
 
 ## Align RGB and Depth Image & Depth Filtering
 Due to the different position of RGB and Depth lens, aligning them should be done to get exact point clouds. This project used alignment function offered by pyrealsense2 package. Raw depth data are so noisy that depth filtering should be needed. Pyrealsense2 library, developed by Intel, offers filtering methods of depth images. In this project, spatial-filter was used that smoothes noise and preserves edge components in depth images. <br>
