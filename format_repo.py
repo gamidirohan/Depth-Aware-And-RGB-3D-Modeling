@@ -63,6 +63,6 @@ def reorganize_dataset(source_dir, target_dir):
         print(f"Copied: {file} → {dst_path}")
 
 if __name__ == "__main__":
-    source_directory = r"train\apple_1"  # Update this path
+    source_directory = r"train\apple_2"  # Update this path
     target_directory = source_directory  # Update this path
     reorganize_dataset(source_directory, target_directory)
