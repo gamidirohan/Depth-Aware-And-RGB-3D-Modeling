@@ -5,7 +5,7 @@ import kornia.feature as KF
 import matplotlib.pyplot as plt
 import cv2
 import open3d as o3d
-from kornia_moons.feature import draw_LAF_matches
+#from kornia_moons.feature import draw_LAF_matches
 from registration import match_ransac
 from utils import get_boundary
 

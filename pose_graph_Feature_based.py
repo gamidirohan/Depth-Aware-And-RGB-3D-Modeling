@@ -1,5 +1,7 @@
 import numpy as np
 import open3d as o3d
+import glob
+import os
 from SIFT import SIFT_Transformation # SIFT feature points based registration
 from ORB import ORB_Transformation # ORB feature points based registration
 from LoFTR import LoFTR_Transformation # LoFTR method based registration
@@ -162,33 +164,25 @@ def full_registration(pcds, max_correspondence_distance_coarse, max_corresponden
 
 if __name__ == "__main__":
 
-    object = "spyderman" # "castard" or "spyderman"
+    # Choose object: e.g., "apple_2" (matches the sample train/apple_2/depth/align_test_depth_1.png)
+    object_name = "apple_2"
 
-    # Path
-    if object == "castard":
-        depth_path = ['./train/castard/depth/align_test_depth%d.png' % i for i in range(1, 6)]
-        rgb_path = ['./train/castard/rgb/align_test%d.png' % i for i in range(1, 6)]
-        pcds_paths = ['./pcd_o3d/castard/box1.pcd', './pcd_o3d/castard/box2.pcd', './pcd_o3d/castard/box3.pcd',
-                      './pcd_o3d/castard/box4.pcd', './pcd_o3d/castard/box5.pcd', './pcd_o3d/castard/box6.pcd',
-                      './pcd_o3d/castard/box7.pcd', './pcd_o3d/castard/box8.pcd', './pcd_o3d/castard/box9.pcd',
-                      './pcd_o3d/castard/box10.pcd', './pcd_o3d/castard/box11.pcd', './pcd_o3d/castard/box12.pcd',
-                      './pcd_o3d/castard/box13.pcd', './pcd_o3d/castard/box14.pcd', './pcd_o3d/castard/box15.pcd',
-                      './pcd_o3d/castard/box16.pcd', './pcd_o3d/castard/box17.pcd', './pcd_o3d/castard/box18.pcd',
-                      './pcd_o3d/castard/box19.pcd', './pcd_o3d/castard/box20.pcd']
-    elif object == "spyderman":
-        depth_path = ['./train/spyderman/depth/align_test_depth%d.png' % i for i in range(1, 17)]
-        rgb_path = ['./train/spyderman/rgb/align_test%d.png' % i for i in range(1, 17)]
-        pcds_paths = ['./pcd_o3d/spyderman/spyderman1.pcd', './pcd_o3d/spyderman/spyderman2.pcd',
-                      './pcd_o3d/spyderman/spyderman3.pcd', './pcd_o3d/spyderman/spyderman4.pcd',
-                      './pcd_o3d/spyderman/spyderman5.pcd', './pcd_o3d/spyderman/spyderman6.pcd',
-                      './pcd_o3d/spyderman/spyderman7.pcd', './pcd_o3d/spyderman/spyderman8.pcd',
-                      './pcd_o3d/spyderman/spyderman9.pcd', './pcd_o3d/spyderman/spyderman10.pcd',
-                      './pcd_o3d/spyderman/spyderman11.pcd', './pcd_o3d/spyderman/spyderman12.pcd',
-                      './pcd_o3d/spyderman/spyderman13.pcd', './pcd_o3d/spyderman/spyderman14.pcd',
-                      './pcd_o3d/spyderman/spyderman15.pcd', './pcd_o3d/spyderman/spyderman16.pcd'
-                      ]
+    # Define folders for each modality based on the object_name
+    rgb_folder = os.path.join("train", object_name, "rgb")
+    depth_folder = os.path.join("train", object_name, "depth")
+    pcd_folder = os.path.join("pcd_o3d", object_name)
 
-    # Define voxel size to Downsample
+    # Find file paths using glob (sorted to ensure correct ordering)
+    rgb_pattern = os.path.join(rgb_folder, "align_test*.png")
+    depth_pattern = os.path.join(depth_folder, "align_test_depth*.png")
+    rgb_path = sorted(glob.glob(rgb_pattern))
+    depth_path = sorted(glob.glob(depth_pattern))
+    pcds_paths = sorted(glob.glob(os.path.join(pcd_folder, "*.pcd")))
+
+    print("Found {} rgb images, {} depth images, and {} point clouds.".format(
+        len(rgb_path), len(depth_path), len(pcds_paths)))
+
+    # Define voxel size for downsampling
     voxel_size = 0.001
     origin_pcds = load_orginal_point_clouds(voxel_size, pcds_paths)
     pcds_down = load_point_clouds(voxel_size, pcds_paths)
@@ -203,8 +197,7 @@ if __name__ == "__main__":
     with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Debug) as cm:
         pose_graph = full_registration(pcds_down,
                                        max_correspondence_distance_coarse,
-                                       max_correspondence_distance_fine,
-                                       )
+                                       max_correspondence_distance_fine)
 
     print("Optimizing PoseGraph ...")
     option = o3d.pipelines.registration.GlobalOptimizationOption(
@@ -212,8 +205,7 @@ if __name__ == "__main__":
         edge_prune_threshold=0.25,
         preference_loop_closure=2.0,
         reference_node=0)
-    with o3d.utility.VerbosityContextManager(
-            o3d.utility.VerbosityLevel.Debug) as cm:
+    with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Debug) as cm:
         o3d.pipelines.registration.global_optimization(
             pose_graph,
             o3d.pipelines.registration.GlobalOptimizationLevenbergMarquardt(),
@@ -226,15 +218,15 @@ if __name__ == "__main__":
         print(pose_graph.nodes[point_id].pose)
         accumulated_pcd += pcds_down[point_id].transform(pose_graph.nodes[point_id].pose)
     o3d.visualization.draw_geometries([accumulated_pcd])
-    # o3d.io.write_point_cloud('accumulated_%s.pcd'%object, accumulated_pcd)
+    # o3d.io.write_point_cloud('accumulated_%s.pcd' % object_name, accumulated_pcd)
 
     y = np.asarray(accumulated_pcd.points)[:, 1]
     y_mean = np.mean(y)
     plt.plot(y)
     plt.show()
-    # idx = np.array([i for i in range(len(z))], dtype=np.int)
+
     idx = np.where(y < 0.138)[0]
-    idx = np.asarray(idx, dtype=np.int)
+    idx = np.asarray(idx, dtype=int)
     interest_pcd = accumulated_pcd.select_by_index(list(idx))
     o3d.visualization.draw_geometries([interest_pcd])
 
