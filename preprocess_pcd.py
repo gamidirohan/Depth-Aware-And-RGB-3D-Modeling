@@ -1,20 +1,28 @@
 import cv2
 import open3d as o3d
 import numpy as np
-import matplotlib.pyplot as plt
+import os
+from tqdm import tqdm
+from termcolor import colored
 
-def rgbd_to_pcd(count):
+def rgbd_to_pcd(count, total_files):
+    print(colored(f"[Processing: Apple {count}/{total_files}]", "cyan"))
+    print("-" * 50)
+    
+    # Read RGB and depth images
+    rgb_path = os.path.join('train', 'apple_2', 'rgb', f'align_test_{count}.png')
+    depth_path = os.path.join('train', 'apple_2', 'depth', f'align_test_depth_{count}.png')
 
-    source_color = o3d.io.read_image('./train/spyderman2/rgb/align_test%d.png'%count)
-    source_depth = o3d.io.read_image('./train/spyderman2/depth/align_test_depth%d.png'%count)
-    source_mask = o3d.io.read_image('./train/spyderman2/mask/align_test_mask%d.png' % count)
-    color_np = np.asarray(source_color)
-    depth_np = np.asarray(source_depth)
-    mask_np = np.asarray(source_mask)
-    color_np[mask_np == 0] = 0
-    depth_np[mask_np == 0] = 0
-    source_color = o3d.geometry.Image(color_np)
-    source_depth = o3d.geometry.Image(depth_np)
+    if not os.path.exists(rgb_path) or not os.path.exists(depth_path):
+        print(colored(f"[ERROR] Missing files: {rgb_path} or {depth_path}", "red"))
+        return
+
+    source_color = o3d.io.read_image(rgb_path)
+    source_depth = o3d.io.read_image(depth_path)
+
+    if source_color is None or source_depth is None:
+        print(colored(f"[ERROR] Failed to read images: {rgb_path} or {depth_path}", "red"))
+        return
 
     K = np.array(
          [[597.522, 0.0, 312.885],
@@ -24,76 +32,68 @@ def rgbd_to_pcd(count):
     intrinsic = o3d.camera.PinholeCameraIntrinsic()
     intrinsic.intrinsic_matrix = K
 
-    source_rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(source_color, source_depth, depth_scale=1000, convert_rgb_to_intensity=False, depth_trunc=1)
+    source_rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(
+        source_color, source_depth, depth_scale=1000, convert_rgb_to_intensity=False, depth_trunc=1)
     pcd = o3d.geometry.PointCloud.create_from_rgbd_image(source_rgbd_image, intrinsic)
-    # o3d.io.write_point_cloud('./pcd_o3d/spyderman2/spyderman2_%d.pcd' % count, pcd)
-
-    # Plane Segmentation
-    plane_model, inliers = pcd.segment_plane(distance_threshold=0.02,
-                                             ransac_n=3,
-                                             num_iterations=1000)
-    [a, b, c, d] = plane_model
-    print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
-    inlier_cloud = pcd.select_by_index(inliers)
-    inlier_cloud.paint_uniform_color([1.0, 0, 0])
+    
+    print(colored("🟢 Step 1: Precomputing Neighbors", "green"))
+    plane_model, inliers = pcd.segment_plane(distance_threshold=0.02, ransac_n=3, num_iterations=1000)
     outlier_cloud = pcd.select_by_index(inliers, invert=True)
-    # o3d.visualization.draw_geometries([inlier_cloud, outlier_cloud])
-    # o3d.visualization.draw_geometries([outlier_cloud])
-
-    with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Debug) as cm:
-        labels = np.array(
-            outlier_cloud.cluster_dbscan(eps=0.02, # Epsilon defines the distance between to neighbors in a cluster
-                               min_points=500, # minimum number of points required to form a cluster
-                               print_progress=True))
-
-    max_label = labels.max()
-    print(f"point cloud has {max_label + 1} clusters")
-
-    # clusters = labels
+    
+    labels = np.array(outlier_cloud.cluster_dbscan(eps=0.02, min_points=500, print_progress=True))
     indexes = np.where(labels == 0)
-
+    
     # Extract Interest point clouds
     interest_pcd = o3d.geometry.PointCloud()
     interest_pcd.points = o3d.utility.Vector3dVector(np.asarray(outlier_cloud.points, np.float32)[indexes])
     interest_pcd.colors = o3d.utility.Vector3dVector(np.asarray(outlier_cloud.colors, np.float32)[indexes])
+    
+    # Load mask image
+    mask_file = os.path.join('train', 'apple_2', 'mask', f'align_test_mask_{count}.png')
+    mask = cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE) > 0  # Convert to binary mask
 
-    colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
-    colors[labels < 0] = 0
-    outlier_cloud.colors = o3d.utility.Vector3dVector(colors[:, :3])
-    # o3d.visualization.draw_geometries([interest_pcd])
+    if mask is None:
+        print(colored(f"[ERROR] Mask file missing: {mask_file}", "red"))
+        return
+    
+    print(colored("🟢 Step 2: Applying Mask Filtering", "green"))
+    points = np.asarray(interest_pcd.points)
+    colors = np.asarray(interest_pcd.colors)
+    height, width = mask.shape
 
-    # Plane Segmentation for floor
-    # plane_model, inliers = interest_pcd.segment_plane(distance_threshold=0.001,
-    #                                          ransac_n=3,
-    #                                          num_iterations=1000)
-    # [a, b, c, d] = plane_model
-    # print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
-    # inlier_cloud = interest_pcd.select_by_index(inliers)
-    # inlier_cloud.paint_uniform_color([1.0, 0, 0])
-    # outlier_cloud = interest_pcd.select_by_index(inliers, invert=True)
-    # o3d.visualization.draw_geometries([inlier_cloud, outlier_cloud])
+    u = np.clip((points[:, 0] * K[0, 0] / points[:, 2] + K[0, 2]).astype(int), 0, width - 1)
+    v = np.clip((points[:, 1] * K[1, 1] / points[:, 2] + K[1, 2]).astype(int), 0, height - 1)
+    mask_indices = mask[v, u]
+    filtered_points = points[mask_indices]
+    filtered_colors = colors[mask_indices]
 
-    y = np.asarray(outlier_cloud.points)[:, 1]
-    y_mean = np.mean(y)
-    # plt.plot(y)
-    # plt.show()
-    # idx = np.array([i for i in range(len(z))], dtype=np.int)
+    interest_pcd.points = o3d.utility.Vector3dVector(filtered_points)
+    interest_pcd.colors = o3d.utility.Vector3dVector(filtered_colors)
+    
+    print(colored("🟡 Step 3: Applying Height-based Filtering", "yellow"))
+    y = np.asarray(interest_pcd.points)[:, 1]
     idx = np.where(y < 0.18)[0]
-    idx = np.asarray(idx, dtype=np.int)
-
-    interest_pcd = outlier_cloud.select_by_index(list(idx))
-    # o3d.visualization.draw_geometries([interest_pcd])
-
-    print("Statistical oulier removal")
+    interest_pcd = interest_pcd.select_by_index(list(idx))
+    
+    print(colored("🔵 Step 4: Outlier Removal", "blue"))
     cl, ind = interest_pcd.remove_statistical_outlier(nb_neighbors=1000, std_ratio=0.8)
-    # o3d.visualization.draw_geometries([cl])
-
-    print("Radius oulier removal")
     cl, ind = cl.remove_radius_outlier(nb_points=100, radius=0.01)
-    o3d.visualization.draw_geometries([cl])
-
-    o3d.io.write_point_cloud('./pcd_o3d/spyderman2/spyderman2%d.pcd'%count, cl)
+    
+    output_path = os.path.join('pcd_o3d', 'apple_2', f'apple_{count}.pcd')
+    success = o3d.io.write_point_cloud(output_path, cl)
+    
+    if success:
+        print(colored(f"✅ Successfully saved: {output_path}", "green"))
+    else:
+        print(colored("❌ ERROR: Write PCD failed", "red"))
+    print("-" * 50)
 
 if __name__ == '__main__':
-    for i in range(1, 33):
-        rgbd_to_pcd(i)
+    rgb_dir = os.path.join('train', 'apple_2', 'rgb')
+    rgb_files = sorted([f for f in os.listdir(rgb_dir) if f.endswith('.png')])
+    file_numbers = sorted([int(f.split('_')[-1].split('.')[0]) for f in rgb_files])
+
+    total_files = len(file_numbers)
+
+    for count in tqdm(file_numbers, desc=f"Processing Apples ({total_files})", unit="apple"):
+        rgbd_to_pcd(count, total_files)
