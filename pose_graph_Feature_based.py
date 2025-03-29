@@ -164,8 +164,8 @@ def full_registration(pcds, max_correspondence_distance_coarse, max_corresponden
 
 if __name__ == "__main__":
 
-    # Choose object: e.g., "apple_2" (matches the sample train/apple_2/depth/align_test_depth_1.png)
-    object_name = "apple_2"
+    # Choose object: e.g., "new_box2" (matches the sample train/new_box2/depth/align_test_depth_1.png)
+    object_name = "new_box2"
 
     # Define folders for each modality based on the object_name
     rgb_folder = os.path.join("train", object_name, "rgb")
