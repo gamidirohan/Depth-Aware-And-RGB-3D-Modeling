@@ -2,7 +2,6 @@ import numpy as np
 import open3d as o3d
 import cv2
 from scipy.spatial.transform import Rotation
-from SIFT import *
 
 def transform_3d_points(points_3d, transformation):
     """

@@ -2,8 +2,7 @@ import numpy as np
 import open3d as o3d
 import glob
 import os
-from SIFT import SIFT_Transformation # SIFT feature points based registration
-from ORB import ORB_Transformation # ORB feature points based registration
+import copy
 from LoFTR import LoFTR_Transformation # LoFTR method based registration
 import matplotlib.pyplot as plt
 
@@ -34,11 +33,10 @@ def relative_camera_poses_all(rgb_lists, depth_lists, pcd_lists):
 
     for i in range(num_multiview-1):
         j = i + 1
-        transformation, pcd1_features, source_pcd1_features, pts1, pts_source_1, pts1_3d, pts_source1_3d = SIFT_Transformation(
+        transformation, _, _ = LoFTR_Transformation(
             rgb_lists[i], rgb_lists[j],
             depth_lists[i], depth_lists[j],
-            pcd_lists[i], pcd_lists[j],
-            distance_ratio=0.7)
+            pcd_lists[i], pcd_lists[j])
         pose_list.append(transformation)
 
     return np.asarray(pose_list)
@@ -85,11 +83,10 @@ def full_registration(pcds, max_correspondence_distance_coarse, max_corresponden
             print("Build o3d.pipelines.registration.PoseGraph")
             if target_id == source_id + 1:  # odometry case
 
-                init_trans, pcd1_features, source_pcd1_features, pts1, pts_source_1, pts1_3d, pts_source1_3d = SIFT_Transformation(
+                init_trans, _, _ = LoFTR_Transformation(
                     rgb_path[source_id], rgb_path[target_id],
                     depth_path[source_id], depth_path[target_id],
-                    origin_pcds[source_id], origin_pcds[target_id],
-                    distance_ratio=0.9)
+                    origin_pcds[source_id], origin_pcds[target_id])
                 # init_trans = relative_camera_poses_select(start_idx=source_id, end_idx=target_id, pose_list=relative_camera_poses)
 
                 # origin_pcds[source_id].estimate_normals()
@@ -135,11 +132,10 @@ def full_registration(pcds, max_correspondence_distance_coarse, max_corresponden
     # Loop closure
     source_id = n_pcds - 1
     target_id = 0
-    init_trans, pcd1_features, source_pcd1_features, pts1, pts_source_1, pts1_3d, pts_source1_3d = SIFT_Transformation(
+    init_trans, _, _ = LoFTR_Transformation(
         rgb_path[source_id], rgb_path[target_id],
         depth_path[source_id], depth_path[target_id],
-        origin_pcds[source_id], origin_pcds[target_id],
-        distance_ratio=0.9)
+        origin_pcds[source_id], origin_pcds[target_id])
 
     origin_pcds[source_id].estimate_normals()
     origin_pcds[target_id].estimate_normals()
@@ -230,19 +226,46 @@ if __name__ == "__main__":
     interest_pcd = accumulated_pcd.select_by_index(list(idx))
     o3d.visualization.draw_geometries([interest_pcd])
 
-    # Render
+    # Enhanced Rendering with better visualization settings
     vis = o3d.visualization.Visualizer()
-    vis.create_window('3DReconstructed')
+    vis.create_window('3D Reconstruction with LoFTR', width=1280, height=720)
 
-    for p in pcds_down:
-        vis.add_geometry(p)
+    # Add each point cloud with a different color for better distinction
+    colors = [
+        [1, 0.706, 0],      # yellow
+        [0, 0.651, 0.929],   # blue
+        [0, 0.8, 0.4],       # green
+        [1, 0.3, 0.3],       # red
+        [0.5, 0, 0.5],       # purple
+        [1, 0.5, 0],         # orange
+        [0, 0.5, 1],         # light blue
+        [0.5, 1, 0.5],       # light green
+    ]
 
-    axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1, origin=[0, 0, 0])
+    for i, p in enumerate(pcds_down):
+        # Create a copy to avoid modifying the original
+        p_colored = copy.deepcopy(p)
+        # Paint with a unique color
+        p_colored.paint_uniform_color(colors[i % len(colors)])
+        vis.add_geometry(p_colored)
+
+    # Add coordinate frame for reference
+    axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.2, origin=[0, 0, 0])
     vis.add_geometry(axis)
 
+    # Enhance render options
     opt = vis.get_render_option()
-    opt.background_color = np.asarray([1, 1, 1])
-    opt.point_size = 1.5
+    opt.background_color = np.asarray([0.1, 0.1, 0.1])  # Dark background for better contrast
+    opt.point_size = 2.5  # Larger point size
+    opt.light_on = True
 
+    # Set initial viewpoint for better perspective
+    view_control = vis.get_view_control()
+    view_control.set_zoom(0.8)
+    view_control.set_front([0, 0, -1])
+    view_control.set_lookat([0, 0, 0])
+    view_control.set_up([0, -1, 0])
+
+    print("\nVisualization window opened. Close the window to continue...")
     vis.run()
     vis.destroy_window()

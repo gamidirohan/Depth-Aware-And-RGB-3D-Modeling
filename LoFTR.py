@@ -30,7 +30,7 @@ def LoFTR_Transformation(img1_path, img2_path, depth_img1_path, depth_img2_path,
     depthR = np.array(o3d.io.read_image(depth_img2_path), np.float32)
 
     # Define matcher
-    matcher = KF.LoFTR(pretrained='outdoor') # indoor or outdoor
+    matcher = KF.LoFTR(pretrained='indoor') # Using indoor model for better results with objects
 
     # LofTR works on grayscale images only
     input_dict = {"image0": K.color.rgb_to_grayscale(img1),
@@ -158,7 +158,8 @@ def LoFTR_Transformation(img1_path, img2_path, depth_img1_path, depth_img2_path,
     pcd2.points = o3d.utility.Vector3dVector(pc_points2)
     pcd2.colors = o3d.utility.Vector3dVector(pc_color2)
 
-    R_t = match_ransac(pts1_3d, pts2_3d, tol=0.1)
+    # Use a more permissive tolerance for better matching with challenging point clouds
+    R_t = match_ransac(pts1_3d, pts2_3d, tol=0.2)
 
     print("Transformation is:")
     print(R_t)
