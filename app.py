@@ -312,7 +312,7 @@ def get_gifs():
         return jsonify({'error': 'Object name is required'}), 400
 
     # Look for GIFs in the results directory
-    results_dir = "C:\\Users\\rm140\\OneDrive\\Desktop\\results\\results"
+    results_dir = "results"
     if not os.path.exists(results_dir):
         return jsonify({'error': 'Results directory not found'}), 404
 
