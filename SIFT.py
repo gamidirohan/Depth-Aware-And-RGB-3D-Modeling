@@ -1,10 +1,65 @@
+import numpy as np
 import open3d as o3d
 import open3d.cpu.pybind.utility
-import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 from registration import match_ransac
 from utils import get_boundary
+
+# Add a direct SIFT feature matching function for visualization
+def SIFT_Feature_Matching(img1, img2, distance_ratio=0.6):
+    """
+    Perform SIFT feature matching between two images and return the visualization.
+
+    Args:
+        img1: First image (source)
+        img2: Second image (target)
+        distance_ratio: Ratio for feature matching (default: 0.6)
+
+    Returns:
+        img_matched: Visualization of the matched features
+    """
+    # Convert images to grayscale if they are color
+    if len(img1.shape) == 3:
+        gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+    else:
+        gray1 = img1
+
+    if len(img2.shape) == 3:
+        gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+    else:
+        gray2 = img2
+
+    # Create SIFT detector
+    sift = cv2.SIFT_create()
+
+    # Find keypoints and descriptors
+    kp1, des1 = sift.detectAndCompute(gray1, None)
+    kp2, des2 = sift.detectAndCompute(gray2, None)
+
+    # Use BFMatcher for feature matching
+    bf = cv2.BFMatcher(cv2.NORM_L1, crossCheck=False)
+    matches = bf.knnMatch(des1, des2, k=2)
+
+    # Apply ratio test to find good matches
+    good_matches = []
+    for m, n in matches:
+        if m.distance < distance_ratio * n.distance:
+            good_matches.append([m])
+
+    # Draw matches
+    img_matched = cv2.drawMatchesKnn(img1, kp1, img2, kp2, good_matches, None,
+                                     matchColor=(0, 255, 0),
+                                     singlePointColor=(255, 0, 0),
+                                     flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+
+    # Add information text
+    cv2.putText(img_matched, f"SIFT Features: {len(kp1)} (left), {len(kp2)} (right)",
+                (10, img_matched.shape[0] - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+    cv2.putText(img_matched, f"Matches: {len(good_matches)}",
+                (10, img_matched.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+
+    return img_matched
 ########################################################################################################################
 # Intrinsic parameter
 ########################################################################################################################
@@ -53,7 +108,7 @@ def SIFT_Transformation(img1, img2, depth_img1, depth_img2, source_pcd, target_p
     FLANN_INDEX_KDTREE = 1
     index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
     search_params = dict(checks=50)
-    
+
     # FLANN Matcher
     flann = cv2.FlannBasedMatcher(index_params, search_params)
 
@@ -111,10 +166,13 @@ def SIFT_Transformation(img1, img2, depth_img1, depth_img2, source_pcd, target_p
     print('Left Keypoint num:', len(kp1_1))
     print('Right Keypoint num:', len(kp2_1))
 
+    # Draw matches
     img_matched = cv2.drawMatchesKnn(imgL, kp1, imgR, kp2, good_matches, None, matchColor=(0, 255, 0),
                        singlePointColor=(255, 0, 0), flags=2)
-    cv2.imshow('img_matched', img_matched)
-    cv2.waitKey(0)
+
+    # Return the matched image instead of showing it directly
+    # This allows the UI to control whether and how to display it
+    matched_image = img_matched
 
     # Set array for keypoints
     pts1 = np.array(pts1)
@@ -200,4 +258,4 @@ def SIFT_Transformation(img1, img2, depth_img1, depth_img2, source_pcd, target_p
     print("Transformation is:")
     print(R_t)
 
-    return R_t, pcd1, pcd2, pts1, pts2, pts1_3d, pts2_3d
+    return R_t, pcd1, pcd2, pts1, pts2, pts1_3d, pts2_3d, img_matched

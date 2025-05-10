@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Object Reconstruction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/PCDLoader.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>3D Object Reconstruction</h1>
+            <p>Select options and generate interactive 3D models</p>
+        </header>
+
+        <div class="visualization-windows">
+            <!-- Left window for 3D model -->
+            <div class="model-window">
+                <h3>3D Model Viewer</h3>
+                <div id="model-container"></div>
+                <div class="model-controls">
+                    <button id="reset-view-btn">Reset View</button>
+                    <div class="slider-group">
+                        <label for="point-size">Point Size:</label>
+                        <input type="range" id="point-size" min="1" max="10" value="2">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right window for GIF display -->
+            <div class="gif-window">
+                <h3>Animation Sequence</h3>
+                <div id="gif-container">
+                    <p class="placeholder-text">GIF will appear here after model generation</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls panel below the windows -->
+        <div class="controls-panel">
+            <div class="control-group">
+                <label for="object-select">Select Object:</label>
+                <select id="object-select">
+                    <!-- Options will be populated from API -->
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Optimization Method:</label>
+                <div class="radio-group">
+                    <input type="radio" id="optimized" name="optimization" value="optimized" checked>
+                    <label for="optimized">Optimized</label>
+
+                    <input type="radio" id="unoptimized" name="optimization" value="unoptimized">
+                    <label for="unoptimized">Unoptimized</label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Feature Points:</label>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="show-features" name="show-features">
+                    <label for="show-features">Show SIFT Matched Points</label>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button id="generate-btn" class="primary-btn">Generate 3D Model</button>
+                <button id="cancel-btn" class="secondary-btn" disabled>Cancel</button>
+            </div>
+        </div>
+
+        <!-- Logs panel at the bottom -->
+        <div class="logs-panel">
+            <h3>Processing Logs</h3>
+            <div id="logs-container">
+                <p class="log-entry">Select options and click "Generate 3D Model" to start...</p>
+            </div>
+        </div>
+
+        <!-- SIFT container (hidden initially) -->
+        <div id="sift-container" class="sift-container" style="display: none;">
+            <h3>SIFT Feature Matches</h3>
+        </div>
+
+        <footer>
+            <p>Computer Vision Project - 3D Object Reconstruction</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

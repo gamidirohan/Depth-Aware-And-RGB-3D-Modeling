@@ -91,7 +91,7 @@ def full_registration(pcds, max_correspondence_distance_coarse, max_corresponden
 
 if __name__ == "__main__":
 
-    object = "spyderman2"
+    object = "castard"
 
     if object == "castard":
         depth_path = ['./train/castard/depth/align_test_depth%d.png' % i for i in range(1, 21)]
